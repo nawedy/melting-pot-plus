@@ -1,76 +1,60 @@
 'use client';
 
-import { createContext, useContext, useReducer, useEffect } from 'react';
-import { User, AuthState, AuthContextType } from '@/types/auth';
+import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
-const initialState: AuthState = {
-  user: null,
-  isLoading: true,
-  error: null,
-};
+interface User {
+  id: string;
+  name: string;
+  email: string;
+  avatar?: string;
+  role: 'user' | 'admin';
+  preferences: {
+    language: string;
+    theme: 'light' | 'dark';
+    notifications: boolean;
+  };
+}
 
-type AuthAction =
-  | { type: 'LOGIN_SUCCESS'; payload: User }
-  | { type: 'LOGIN_ERROR'; payload: string }
-  | { type: 'LOGOUT' }
-  | { type: 'UPDATE_USER'; payload: Partial<User> }
-  | { type: 'SET_LOADING'; payload: boolean };
+interface AuthContextType {
+  user: User | null;
+  isLoading: boolean;
+  isAuthenticated: boolean;
+  login: (email: string, password: string) => Promise<void>;
+  register: (userData: Partial<User> & { password: string }) => Promise<void>;
+  logout: () => Promise<void>;
+  updateUser: (userData: Partial<User>) => Promise<void>;
+}
 
-const authReducer = (state: AuthState, action: AuthAction): AuthState => {
-  switch (action.type) {
-    case 'LOGIN_SUCCESS':
-      return {
-        ...state,
-        user: action.payload,
-        isLoading: false,
-        error: null,
-      };
-    case 'LOGIN_ERROR':
-      return {
-        ...state,
-        user: null,
-        isLoading: false,
-        error: action.payload,
-      };
-    case 'LOGOUT':
-      return {
-        ...state,
-        user: null,
-        isLoading: false,
-        error: null,
-      };
-    case 'UPDATE_USER':
-      return {
-        ...state,
-        user: state.user ? { ...state.user, ...action.payload } : null,
-      };
-    case 'SET_LOADING':
-      return {
-        ...state,
-        isLoading: action.payload,
-      };
-    default:
-      return state;
-  }
-};
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const AuthContext = createContext<AuthContextType | null>(null);
-
-export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [state, dispatch] = useReducer(authReducer, initialState);
+export function AuthProvider({ children }: { children: ReactNode }) {
+  const [user, setUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Check for stored session
+    // Check for stored auth token and validate session
     const checkAuth = async () => {
       try {
-        const session = localStorage.getItem('user');
-        if (session) {
-          dispatch({ type: 'LOGIN_SUCCESS', payload: JSON.parse(session) });
+        const token = localStorage.getItem('auth_token');
+        if (token) {
+          // TODO: Validate token with backend
+          // For now, simulate a logged in user
+          setUser({
+            id: '1',
+            name: 'Demo User',
+            email: 'demo@example.com',
+            role: 'user',
+            preferences: {
+              language: 'en',
+              theme: 'light',
+              notifications: true,
+            },
+          });
         }
       } catch (error) {
         console.error('Auth check failed:', error);
       } finally {
-        dispatch({ type: 'SET_LOADING', payload: false });
+        setIsLoading(false);
       }
     };
 
@@ -78,86 +62,98 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const login = async (email: string, password: string) => {
+    setIsLoading(true);
     try {
-      dispatch({ type: 'SET_LOADING', payload: true });
-      // Implement your login logic here
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      });
-
-      if (!response.ok) throw new Error('Login failed');
-
-      const user = await response.json();
-      localStorage.setItem('user', JSON.stringify(user));
-      dispatch({ type: 'LOGIN_SUCCESS', payload: user });
+      // TODO: Implement actual login logic with backend
+      // For now, simulate successful login
+      const mockUser = {
+        id: '1',
+        name: 'Demo User',
+        email,
+        role: 'user' as const,
+        preferences: {
+          language: 'en',
+          theme: 'light' as const,
+          notifications: true,
+        },
+      };
+      localStorage.setItem('auth_token', 'mock_token');
+      setUser(mockUser);
     } catch (error) {
-      dispatch({ type: 'LOGIN_ERROR', payload: 'Invalid credentials' });
+      console.error('Login failed:', error);
       throw error;
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const register = async (email: string, password: string, name: string) => {
+  const register = async (userData: Partial<User> & { password: string }) => {
+    setIsLoading(true);
     try {
-      dispatch({ type: 'SET_LOADING', payload: true });
-      // Implement your registration logic here
-      const response = await fetch('/api/auth/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password, name }),
-      });
-
-      if (!response.ok) throw new Error('Registration failed');
-
-      const user = await response.json();
-      localStorage.setItem('user', JSON.stringify(user));
-      dispatch({ type: 'LOGIN_SUCCESS', payload: user });
+      // TODO: Implement actual registration logic with backend
+      // For now, simulate successful registration
+      const mockUser = {
+        id: '1',
+        name: userData.name || 'New User',
+        email: userData.email || '',
+        role: 'user' as const,
+        preferences: {
+          language: 'en',
+          theme: 'light' as const,
+          notifications: true,
+        },
+      };
+      localStorage.setItem('auth_token', 'mock_token');
+      setUser(mockUser);
     } catch (error) {
-      dispatch({ type: 'LOGIN_ERROR', payload: 'Registration failed' });
+      console.error('Registration failed:', error);
       throw error;
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const logout = async () => {
-    localStorage.removeItem('user');
-    dispatch({ type: 'LOGOUT' });
-  };
-
-  const updateUser = async (data: Partial<User>) => {
     try {
-      // Implement your user update logic here
-      const response = await fetch('/api/auth/update', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      });
-
-      if (!response.ok) throw new Error('Update failed');
-
-      const updatedUser = await response.json();
-      localStorage.setItem('user', JSON.stringify(updatedUser));
-      dispatch({ type: 'UPDATE_USER', payload: data });
+      // TODO: Implement actual logout logic with backend
+      localStorage.removeItem('auth_token');
+      setUser(null);
     } catch (error) {
-      console.error('Update failed:', error);
+      console.error('Logout failed:', error);
       throw error;
     }
   };
 
-  const value = {
-    ...state,
-    login,
-    register,
-    logout,
-    updateUser,
+  const updateUser = async (userData: Partial<User>) => {
+    try {
+      // TODO: Implement actual user update logic with backend
+      setUser(prev => prev ? { ...prev, ...userData } : null);
+    } catch (error) {
+      console.error('User update failed:', error);
+      throw error;
+    }
   };
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider
+      value={{
+        user,
+        isLoading,
+        isAuthenticated: !!user,
+        login,
+        register,
+        logout,
+        updateUser,
+      }}
+    >
+      {children}
+    </AuthContext.Provider>
+  );
 }
 
 export function useAuth() {
   const context = useContext(AuthContext);
-  if (!context) {
+  if (context === undefined) {
     throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
