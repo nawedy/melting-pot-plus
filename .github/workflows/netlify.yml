@@ -25,18 +25,22 @@ jobs:
         run: npm run build
         env:
           NEXT_PUBLIC_SITE_URL: ${{ secrets.NEXT_PUBLIC_SITE_URL }}
+          NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
+          NEXTAUTH_URL: ${{ secrets.NEXTAUTH_URL }}
+          NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET }}
 
       - name: Deploy to Netlify (Preview)
         uses: nwtgck/actions-netlify@v2.0
         with:
-          publish-dir: '.next'
+          publish-dir: 'out'
           github-token: ${{ secrets.GITHUB_TOKEN }}
           deploy-message: "Preview Deploy from GitHub Actions"
           enable-pull-request-comment: true
           enable-commit-comment: false
           overwrites-pull-request-comment: true
           alias: deploy-preview-${{ github.event.number }}
+          fails-without-credentials: true
         env:
           NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
           NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
-        timeout-minutes: 10 
+        timeout-minutes: 15 

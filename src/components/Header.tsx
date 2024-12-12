@@ -1,318 +1,270 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { Fragment, useState } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
-import { motion, AnimatePresence, useScroll } from 'framer-motion';
-import { ShoppingCartIcon, UserIcon, GlobeAltIcon, Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline';
-import { useAuth } from '@/contexts/AuthContext';
-import { useCart } from '@/contexts/CartContext';
+import { useRouter, usePathname } from 'next/navigation';
+import { motion } from 'framer-motion';
+import { Menu, Transition } from '@headlessui/react';
+import {
+  ShoppingCartIcon,
+  UserIcon,
+  GlobeAltIcon,
+  Bars3Icon,
+  XMarkIcon,
+} from '@heroicons/react/24/outline';
 import { languages } from '@/config/languages';
+import { useCart } from '@/contexts/CartContext';
+import { useAuth } from '@/contexts/AuthContext';
 
-const navVariants = {
-  hidden: { y: -100 },
-  visible: {
-    y: 0,
-    transition: {
-      type: 'spring',
-      stiffness: 300,
-      damping: 30,
-      staggerChildren: 0.1
-    }
-  }
-};
-
-const mobileMenuVariants = {
-  closed: {
-    opacity: 0,
-    height: 0,
-    transition: {
-      duration: 0.3,
-      ease: "easeInOut",
-      when: "afterChildren"
-    }
-  },
-  open: {
-    opacity: 1,
-    height: "auto",
-    transition: {
-      duration: 0.3,
-      ease: "easeInOut",
-      when: "beforeChildren",
-      staggerChildren: 0.1
-    }
-  }
-};
-
-const menuItemVariants = {
-  closed: {
-    x: -20,
-    opacity: 0
-  },
-  open: {
-    x: 0,
-    opacity: 1,
-    transition: {
-      duration: 0.3,
-      ease: "easeOut"
-    }
-  }
-};
-
-const menuBackdropVariants = {
-  closed: {
-    opacity: 0,
-    transition: {
-      duration: 0.2
-    }
-  },
-  open: {
-    opacity: 1,
-    transition: {
-      duration: 0.3
-    }
-  }
-};
+function classNames(...classes: string[]) {
+  return classes.filter(Boolean).join(' ');
+}
 
 export default function Header() {
-  const [isScrolled, setIsScrolled] = useState(false);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [isLanguageMenuOpen, setIsLanguageMenuOpen] = useState(false);
-  const { user } = useAuth();
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const router = useRouter();
+  const pathname = usePathname();
   const { toggleCart, items } = useCart();
-  const { scrollY } = useScroll();
+  const { user, logout } = useAuth();
 
-  // Close mobile menu on resize
-  useEffect(() => {
-    const handleResize = () => {
-      if (window.innerWidth >= 768) {
-        setIsMobileMenuOpen(false);
-      }
-    };
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
+  const handleLanguageChange = (langCode: string) => {
+    // Get the current path segments
+    const segments = pathname.split('/');
+    
+    // Replace the language code (first segment after empty string)
+    if (segments[1] && Object.keys(languages).includes(segments[1])) {
+      segments[1] = langCode;
+    } else {
+      segments.splice(1, 0, langCode);
+    }
 
-  // Handle scroll
-  useEffect(() => {
-    return scrollY.onChange(latest => {
-      setIsScrolled(latest > 0);
-    });
-  }, [scrollY]);
+    // Reconstruct the path
+    const newPath = segments.join('/');
+    
+    // Update the cookie
+    document.cookie = `NEXT_LOCALE=${langCode};path=/;max-age=31536000`;
+    
+    // Navigate to the new path
+    router.push(newPath);
+  };
 
-  // Close menus when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      const target = e.target as HTMLElement;
-      if (!target.closest('.mobile-menu') && !target.closest('.mobile-menu-button')) {
-        setIsMobileMenuOpen(false);
-      }
-      if (!target.closest('.language-menu') && !target.closest('.language-button')) {
-        setIsLanguageMenuOpen(false);
-      }
-    };
-    document.addEventListener('click', handleClickOutside);
-    return () => document.removeEventListener('click', handleClickOutside);
-  }, []);
-
-  const totalItems = items.reduce((acc, item) => acc + item.quantity, 0);
-
-  const navItems = [
+  const navigation = [
     { name: 'Products', href: '/products' },
     { name: 'Categories', href: '/categories' },
     { name: 'Vendors', href: '/vendors' },
     { name: 'Blog', href: '/blog' },
-    { name: 'About', href: '/about' },
   ];
 
   return (
-    <>
-      <motion.header
-        variants={navVariants}
-        initial="hidden"
-        animate="visible"
-        className={`fixed w-full z-50 transition-all duration-300 ${
-          isScrolled ? 'bg-white/80 backdrop-blur-md shadow-md' : 'bg-transparent'
-        }`}
-      >
-        <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="h-16 flex items-center justify-between">
-            {/* Logo */}
-            <motion.div
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              className="flex-shrink-0"
-            >
-              <Link href="/" className="flex items-center">
-                <Image
-                  src="/logo.png"
-                  alt="Melting Pot Plus"
-                  width={40}
-                  height={40}
-                  className="rounded-full"
-                />
-                <span className="ml-2 text-xl font-bold text-gray-900">
-                  Melting Pot Plus
-                </span>
-              </Link>
-            </motion.div>
+    <header className="fixed w-full bg-white shadow-sm z-40">
+      <nav className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8" aria-label="Top">
+        <div className="flex h-16 items-center justify-between">
+          {/* Logo */}
+          <div className="flex items-center">
+            <Link href="/">
+              <motion.span
+                whileHover={{ scale: 1.05 }}
+                className="text-xl font-bold text-primary-600"
+              >
+                Melting Pot Plus
+              </motion.span>
+            </Link>
+          </div>
 
-            {/* Desktop Navigation */}
-            <div className="hidden md:flex md:items-center md:space-x-8">
-              {navItems.map((item) => (
-                <motion.div
+          {/* Desktop Navigation */}
+          <div className="hidden md:flex md:items-center md:space-x-6">
+            {navigation.map((item) => (
+              <Link
+                key={item.name}
+                href={item.href}
+                className={classNames(
+                  pathname.startsWith(item.href)
+                    ? 'text-primary-600'
+                    : 'text-gray-700 hover:text-primary-600',
+                  'text-sm font-medium transition-colors duration-200'
+                )}
+              >
+                {item.name}
+              </Link>
+            ))}
+          </div>
+
+          {/* Desktop Actions */}
+          <div className="hidden md:flex md:items-center md:space-x-4">
+            {/* Language Selector */}
+            <Menu as="div" className="relative">
+              <Menu.Button className="flex items-center text-gray-700 hover:text-primary-600">
+                <GlobeAltIcon className="h-6 w-6" aria-hidden="true" />
+              </Menu.Button>
+              <Transition
+                as={Fragment}
+                enter="transition ease-out duration-100"
+                enterFrom="transform opacity-0 scale-95"
+                enterTo="transform opacity-100 scale-100"
+                leave="transition ease-in duration-75"
+                leaveFrom="transform opacity-100 scale-100"
+                leaveTo="transform opacity-0 scale-95"
+              >
+                <Menu.Items className="absolute right-0 mt-2 w-48 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
+                  <div className="py-1">
+                    {Object.values(languages).map((lang) => (
+                      <motion.button
+                        key={lang.code}
+                        whileHover={{ backgroundColor: '#F3F4F6' }}
+                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        onClick={() => handleLanguageChange(lang.code)}
+                      >
+                        <span className="flex items-center">
+                          <span className={`fi fi-${lang.flag} mr-2`} />
+                          {lang.name}
+                        </span>
+                      </motion.button>
+                    ))}
+                  </div>
+                </Menu.Items>
+              </Transition>
+            </Menu>
+
+            {/* Cart */}
+            <button
+              onClick={toggleCart}
+              className="relative text-gray-700 hover:text-primary-600"
+            >
+              <ShoppingCartIcon className="h-6 w-6" aria-hidden="true" />
+              {items.length > 0 && (
+                <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-primary-600 text-xs text-white flex items-center justify-center">
+                  {items.length}
+                </span>
+              )}
+            </button>
+
+            {/* User Menu */}
+            <Menu as="div" className="relative">
+              <Menu.Button className="flex items-center text-gray-700 hover:text-primary-600">
+                <UserIcon className="h-6 w-6" aria-hidden="true" />
+              </Menu.Button>
+              <Transition
+                as={Fragment}
+                enter="transition ease-out duration-100"
+                enterFrom="transform opacity-0 scale-95"
+                enterTo="transform opacity-100 scale-100"
+                leave="transition ease-in duration-75"
+                leaveFrom="transform opacity-100 scale-100"
+                leaveTo="transform opacity-0 scale-95"
+              >
+                <Menu.Items className="absolute right-0 mt-2 w-48 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
+                  <div className="py-1">
+                    {user ? (
+                      <>
+                        <Menu.Item>
+                          {({ active }) => (
+                            <Link
+                              href="/profile"
+                              className={classNames(
+                                active ? 'bg-gray-100' : '',
+                                'block px-4 py-2 text-sm text-gray-700'
+                              )}
+                            >
+                              Profile
+                            </Link>
+                          )}
+                        </Menu.Item>
+                        <Menu.Item>
+                          {({ active }) => (
+                            <button
+                              onClick={() => logout()}
+                              className={classNames(
+                                active ? 'bg-gray-100' : '',
+                                'block w-full text-left px-4 py-2 text-sm text-gray-700'
+                              )}
+                            >
+                              Sign out
+                            </button>
+                          )}
+                        </Menu.Item>
+                      </>
+                    ) : (
+                      <>
+                        <Menu.Item>
+                          {({ active }) => (
+                            <Link
+                              href="/login"
+                              className={classNames(
+                                active ? 'bg-gray-100' : '',
+                                'block px-4 py-2 text-sm text-gray-700'
+                              )}
+                            >
+                              Sign in
+                            </Link>
+                          )}
+                        </Menu.Item>
+                        <Menu.Item>
+                          {({ active }) => (
+                            <Link
+                              href="/register"
+                              className={classNames(
+                                active ? 'bg-gray-100' : '',
+                                'block px-4 py-2 text-sm text-gray-700'
+                              )}
+                            >
+                              Create account
+                            </Link>
+                          )}
+                        </Menu.Item>
+                      </>
+                    )}
+                  </div>
+                </Menu.Items>
+              </Transition>
+            </Menu>
+          </div>
+
+          {/* Mobile menu button */}
+          <div className="flex md:hidden">
+            <button
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+              className="text-gray-700 hover:text-primary-600"
+            >
+              <span className="sr-only">Open menu</span>
+              {isMenuOpen ? (
+                <XMarkIcon className="h-6 w-6" aria-hidden="true" />
+              ) : (
+                <Bars3Icon className="h-6 w-6" aria-hidden="true" />
+              )}
+            </button>
+          </div>
+        </div>
+
+        {/* Mobile menu */}
+        <Transition
+          show={isMenuOpen}
+          enter="transition ease-out duration-100"
+          enterFrom="transform opacity-0 scale-95"
+          enterTo="transform opacity-100 scale-100"
+          leave="transition ease-in duration-75"
+          leaveFrom="transform opacity-100 scale-100"
+          leaveTo="transform opacity-0 scale-95"
+        >
+          <div className="md:hidden">
+            <div className="space-y-1 px-2 pb-3 pt-2">
+              {navigation.map((item) => (
+                <Link
                   key={item.name}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
+                  href={item.href}
+                  className={classNames(
+                    pathname.startsWith(item.href)
+                      ? 'bg-primary-50 text-primary-600'
+                      : 'text-gray-700 hover:bg-gray-50 hover:text-primary-600',
+                    'block rounded-md px-3 py-2 text-base font-medium'
+                  )}
                 >
-                  <Link
-                    href={item.href}
-                    className="text-gray-700 hover:text-primary-600 transition-colors"
-                  >
-                    {item.name}
-                  </Link>
-                </motion.div>
+                  {item.name}
+                </Link>
               ))}
             </div>
-
-            {/* Right side icons */}
-            <div className="flex items-center space-x-4">
-              {/* Language Selector */}
-              <div className="relative language-menu">
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => setIsLanguageMenuOpen(!isLanguageMenuOpen)}
-                  className="language-button p-2 text-gray-700 hover:text-primary-600 transition-colors"
-                >
-                  <GlobeAltIcon className="w-6 h-6" />
-                </motion.button>
-
-                <AnimatePresence>
-                  {isLanguageMenuOpen && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: 10 }}
-                      className="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50"
-                    >
-                      <div className="py-1">
-                        {languages.map((lang) => (
-                          <motion.button
-                            key={lang.code}
-                            whileHover={{ backgroundColor: '#F3F4F6' }}
-                            className="w-full text-left px-4 py-2 text-sm text-gray-700"
-                          >
-                            {lang.name}
-                          </motion.button>
-                        ))}
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-
-              {/* User Menu */}
-              <motion.div
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                <Link
-                  href={user ? '/profile' : '/login'}
-                  className="p-2 text-gray-700 hover:text-primary-600 transition-colors"
-                >
-                  <UserIcon className="w-6 h-6" />
-                </Link>
-              </motion.div>
-
-              {/* Cart */}
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={toggleCart}
-                className="p-2 text-gray-700 hover:text-primary-600 transition-colors relative"
-              >
-                <ShoppingCartIcon className="w-6 h-6" />
-                {totalItems > 0 && (
-                  <motion.span
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    className="absolute -top-1 -right-1 bg-primary-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center"
-                  >
-                    {totalItems}
-                  </motion.span>
-                )}
-              </motion.button>
-
-              {/* Mobile menu button */}
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                className="mobile-menu-button md:hidden p-2 text-gray-700 hover:text-primary-600 transition-colors"
-              >
-                <motion.div
-                  animate={isMobileMenuOpen ? { rotate: 90 } : { rotate: 0 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  {isMobileMenuOpen ? (
-                    <XMarkIcon className="w-6 h-6" />
-                  ) : (
-                    <Bars3Icon className="w-6 h-6" />
-                  )}
-                </motion.div>
-              </motion.button>
-            </div>
           </div>
-        </nav>
-
-        {/* Mobile Navigation */}
-        <AnimatePresence>
-          {isMobileMenuOpen && (
-            <>
-              {/* Backdrop */}
-              <motion.div
-                variants={menuBackdropVariants}
-                initial="closed"
-                animate="open"
-                exit="closed"
-                className="fixed inset-0 bg-black/20 backdrop-blur-sm md:hidden z-40"
-                onClick={() => setIsMobileMenuOpen(false)}
-              />
-
-              {/* Menu */}
-              <motion.div
-                variants={mobileMenuVariants}
-                initial="closed"
-                animate="open"
-                exit="closed"
-                className="absolute top-16 inset-x-0 bg-white shadow-lg md:hidden mobile-menu z-50"
-              >
-                <div className="px-4 py-6 space-y-4">
-                  {navItems.map((item) => (
-                    <motion.div
-                      key={item.name}
-                      variants={menuItemVariants}
-                      className="block"
-                    >
-                      <Link
-                        href={item.href}
-                        className="block px-4 py-2 text-base font-medium text-gray-700 hover:text-primary-600 hover:bg-gray-50 rounded-lg transition-colors"
-                        onClick={() => setIsMobileMenuOpen(false)}
-                      >
-                        {item.name}
-                      </Link>
-                    </motion.div>
-                  ))}
-                </div>
-              </motion.div>
-            </>
-          )}
-        </AnimatePresence>
-      </motion.header>
-
-      {/* Spacer for fixed header */}
-      <div className="h-16" />
-    </>
+        </Transition>
+      </nav>
+    </header>
   );
 } 

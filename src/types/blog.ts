@@ -47,7 +47,7 @@ export interface BlogPost {
   shares: number;
   isUserSubmission?: boolean;
   status?: 'published' | 'pending' | 'draft';
-  socialShares?: {
+  socialShares: {
     facebook: number;
     twitter: number;
     instagram: number;
@@ -63,6 +63,7 @@ export interface BlogComment {
   content: string;
   createdAt: string;
   likes: number;
+  isLiked?: boolean;
   replies?: BlogComment[];
   isEdited?: boolean;
   editedAt?: string;

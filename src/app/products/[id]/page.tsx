@@ -7,6 +7,7 @@ import { StarIcon, HeartIcon, ShoppingCartIcon } from '@heroicons/react/24/outli
 import { HeartIcon as HeartSolidIcon } from '@heroicons/react/24/solid';
 import { useAuth } from '@/contexts/AuthContext';
 import { sampleProducts } from '@/data/products';
+import { Variants } from 'framer-motion';
 
 const imageVariants = {
   enter: (direction: number) => ({
@@ -25,13 +26,12 @@ const imageVariants = {
   })
 };
 
-const fadeInUp = {
+const fadeInUp: Variants = {
   initial: { opacity: 0, y: 20 },
-  animate: { opacity: 1, y: 0 },
-  transition: { duration: 0.5 }
+  animate: { opacity: 1, y: 0 }
 };
 
-const staggerContainer = {
+const staggerContainer: Variants = {
   animate: {
     transition: {
       staggerChildren: 0.1

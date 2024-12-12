@@ -16,7 +16,8 @@ type CartAction =
   | { type: 'REMOVE_ITEM'; payload: string }
   | { type: 'UPDATE_QUANTITY'; payload: { productId: string; quantity: number } }
   | { type: 'CLEAR_CART' }
-  | { type: 'TOGGLE_CART' };
+  | { type: 'TOGGLE_CART' }
+  | { type: 'UPDATE_TOTAL' };
 
 interface CartContextType extends CartState {
   addItem: (item: CartItem) => void;
@@ -33,9 +34,22 @@ const initialState: CartState = {
   total: 0,
 };
 
+function calculateTotal(items: CartItem[], products: Product[]): number {
+  return items.reduce((total, item) => {
+    const product = products.find(p => p.id === item.productId);
+    if (product && product.inStock) {
+      return total + (product.price * item.quantity);
+    }
+    return total;
+  }, 0);
+}
+
 function cartReducer(state: CartState, action: CartAction): CartState {
   switch (action.type) {
     case 'ADD_ITEM': {
+      const product = sampleProducts.find(p => p.id === action.payload.productId);
+      if (!product || !product.inStock) return state;
+
       const existingItem = state.items.find(item => item.productId === action.payload.productId);
       let newItems;
       if (existingItem) {
@@ -50,31 +64,47 @@ function cartReducer(state: CartState, action: CartAction): CartState {
       return {
         ...state,
         items: newItems,
+        total: calculateTotal(newItems, sampleProducts),
       };
     }
-    case 'REMOVE_ITEM':
+    case 'REMOVE_ITEM': {
+      const newItems = state.items.filter(item => item.productId !== action.payload);
       return {
         ...state,
-        items: state.items.filter(item => item.productId !== action.payload),
+        items: newItems,
+        total: calculateTotal(newItems, sampleProducts),
       };
-    case 'UPDATE_QUANTITY':
+    }
+    case 'UPDATE_QUANTITY': {
+      const product = sampleProducts.find(p => p.id === action.payload.productId);
+      if (!product || !product.inStock) return state;
+
+      const newItems = state.items.map(item =>
+        item.productId === action.payload.productId
+          ? { ...item, quantity: action.payload.quantity }
+          : item
+      );
       return {
         ...state,
-        items: state.items.map(item =>
-          item.productId === action.payload.productId
-            ? { ...item, quantity: action.payload.quantity }
-            : item
-        ),
+        items: newItems,
+        total: calculateTotal(newItems, sampleProducts),
       };
+    }
     case 'CLEAR_CART':
       return {
         ...state,
         items: [],
+        total: 0,
       };
     case 'TOGGLE_CART':
       return {
         ...state,
         isOpen: !state.isOpen,
+      };
+    case 'UPDATE_TOTAL':
+      return {
+        ...state,
+        total: calculateTotal(state.items, sampleProducts),
       };
     default:
       return state;
@@ -102,8 +132,16 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem('cart', JSON.stringify({ items: state.items }));
   }, [state.items]);
 
+  // Update total when products change (e.g., when a product becomes out of stock)
+  useEffect(() => {
+    dispatch({ type: 'UPDATE_TOTAL' });
+  }, [sampleProducts]);
+
   const addItem = (item: CartItem) => {
-    dispatch({ type: 'ADD_ITEM', payload: item });
+    const product = getProduct(item.productId);
+    if (product && product.inStock) {
+      dispatch({ type: 'ADD_ITEM', payload: item });
+    }
   };
 
   const removeItem = (productId: string) => {
@@ -111,7 +149,10 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   };
 
   const updateQuantity = (productId: string, quantity: number) => {
-    dispatch({ type: 'UPDATE_QUANTITY', payload: { productId, quantity } });
+    const product = getProduct(productId);
+    if (product && product.inStock && quantity > 0) {
+      dispatch({ type: 'UPDATE_QUANTITY', payload: { productId, quantity } });
+    }
   };
 
   const clearCart = () => {

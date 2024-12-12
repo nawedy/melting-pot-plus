@@ -46,16 +46,28 @@ export const sampleBlogPosts: BlogPost[] = [
     publishedAt: '2024-01-15T10:00:00Z',
     readTime: 8,
     likes: 245,
+    shares: 123,
     comments: [
       {
         id: 'comment1',
         userId: 'user1',
         userName: 'Sarah Johnson',
+        userAvatar: '/images/avatars/sarah-johnson.jpg',
         content: 'This was such an insightful article! I had no idea about the complexity of the coffee ceremony.',
         createdAt: '2024-01-15T14:30:00Z',
         likes: 12,
+        isLiked: false,
+        isEdited: false,
       },
     ],
+    isUserSubmission: false,
+    status: 'published',
+    socialShares: {
+      facebook: 45,
+      twitter: 32,
+      instagram: 28,
+      whatsapp: 18,
+    },
   },
   {
     id: 'moroccan-tagine',
@@ -102,16 +114,15 @@ export const sampleBlogPosts: BlogPost[] = [
     publishedAt: '2024-01-14T09:00:00Z',
     readTime: 12,
     likes: 189,
-    comments: [
-      {
-        id: 'comment2',
-        userId: 'user2',
-        userName: 'Mohammed Hassan',
-        content: 'The tips about spice combinations were especially helpful. Thank you!',
-        createdAt: '2024-01-14T11:45:00Z',
-        likes: 8,
-      },
-    ],
+    shares: 98,
+    comments: [],
+    isUserSubmission: false,
+    status: 'published',
+    socialShares: {
+      facebook: 35,
+      twitter: 28,
+      instagram: 22,
+      whatsapp: 13,
+    },
   },
-  // Add more sample blog posts as needed
 ]; 

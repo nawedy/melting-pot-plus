@@ -24,9 +24,8 @@ const CategoryList: React.FC<CategoryListProps> = ({
     const stats = new Map<string, number>();
     
     posts.forEach((post) => {
-      post.categories?.forEach((category) => {
-        stats.set(category, (stats.get(category) || 0) + 1);
-      });
+      const category = post.category.name.en;
+      stats.set(category, (stats.get(category) || 0) + 1);
     });
 
     return Array.from(stats.entries())

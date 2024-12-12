@@ -7,6 +7,7 @@ interface RelatedPostsProps {
   currentPost: BlogPost;
   allPosts: BlogPost[];
   maxPosts?: number;
+  language?: string;
 }
 
 /**
@@ -19,6 +20,7 @@ const RelatedPosts: React.FC<RelatedPostsProps> = ({
   currentPost,
   allPosts,
   maxPosts = 3,
+  language = 'en'
 }) => {
   const { t } = useTranslation();
 
@@ -29,20 +31,20 @@ const RelatedPosts: React.FC<RelatedPostsProps> = ({
       .map((post) => {
         let score = 0;
         
-        // Check matching categories
-        const sharedCategories = post.categories?.filter((category) =>
-          currentPost.categories?.includes(category)
-        );
-        score += (sharedCategories?.length || 0) * 2;
+        // Check if categories match
+        if (post.category.id === currentPost.category.id) {
+          score += 2;
+        }
 
         // Check matching tags
-        const sharedTags = post.tags?.filter((tag) =>
-          currentPost.tags?.includes(tag)
+        const sharedTags = post.tags.filter((tag) =>
+          currentPost.tags.includes(tag)
         );
-        score += sharedTags?.length || 0;
+        score += sharedTags.length;
 
         return { post, score };
       })
+      .filter(({ score }) => score > 0) // Only include posts with some relevance
       .sort((a, b) => b.score - a.score)
       .slice(0, maxPosts)
       .map(({ post }) => post);
@@ -61,7 +63,11 @@ const RelatedPosts: React.FC<RelatedPostsProps> = ({
       </h2>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {relatedPosts.map((post) => (
-          <BlogCard key={post.id} post={post} />
+          <BlogCard 
+            key={post.id} 
+            post={post}
+            language={language}
+          />
         ))}
       </div>
     </div>

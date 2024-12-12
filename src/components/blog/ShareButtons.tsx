@@ -1,314 +1,184 @@
 'use client';
 
-import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { ShareOptions } from '@/types/blog';
+import React, { useState } from 'react';
 import {
   FacebookShareButton,
   TwitterShareButton,
   WhatsappShareButton,
-  EmailShareButton,
-  LinkedinShareButton,
   TelegramShareButton,
+  LinkedinShareButton,
   PinterestShareButton,
   RedditShareButton,
   FacebookIcon,
   TwitterIcon,
   WhatsappIcon,
-  EmailIcon,
-  LinkedinIcon,
   TelegramIcon,
+  LinkedinIcon,
   PinterestIcon,
   RedditIcon,
 } from 'react-share';
 import { ClipboardIcon, CheckIcon } from '@heroicons/react/24/outline';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface ShareButtonsProps {
   url: string;
   title: string;
   description: string;
   image?: string;
-  showCount?: boolean;
   onShare?: (platform: string) => void;
-  className?: string;
-  size?: number;
-  round?: boolean;
-  showCopyLink?: boolean;
-  showQR?: boolean;
-  showStats?: boolean;
-  stats?: {
-    [key: string]: number;
-  };
+  language?: string;
 }
 
-const buttonVariants = {
-  initial: { scale: 0.8, opacity: 0 },
-  animate: { 
-    scale: 1, 
-    opacity: 1,
-    transition: {
-      type: "spring",
-      stiffness: 300,
-      damping: 20
-    }
-  },
-  hover: { 
-    scale: 1.1,
-    transition: {
-      type: "spring",
-      stiffness: 400,
-      damping: 10
-    }
-  },
-  tap: { scale: 0.9 }
-};
-
-const containerVariants = {
-  initial: { opacity: 0 },
-  animate: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.1
-    }
-  }
-};
-
-const tooltipVariants = {
-  hidden: { opacity: 0, y: 10 },
-  visible: { 
-    opacity: 1, 
-    y: 0,
-    transition: {
-      type: "spring",
-      stiffness: 300,
-      damping: 25
-    }
-  }
-};
-
-const statsVariants = {
-  initial: { height: 0, opacity: 0 },
-  animate: {
-    height: 'auto',
-    opacity: 1,
-    transition: {
-      height: {
-        type: "spring",
-        stiffness: 300,
-        damping: 30
-      },
-      opacity: {
-        duration: 0.2
-      }
-    }
-  }
-};
-
-export default function ShareButtons({
-  url,
-  title,
-  description,
-  image,
-  showCount = false,
+export default function ShareButtons({ 
+  url, 
+  title, 
+  description, 
+  image = '', 
   onShare,
-  className = '',
-  size = 32,
-  round = true,
-  showCopyLink = true,
-  showQR = false,
-  showStats = false,
-  stats = {}
+  language = 'en'
 }: ShareButtonsProps) {
   const [copied, setCopied] = useState(false);
   const [showTooltip, setShowTooltip] = useState<string | null>(null);
-  const [showAllStats, setShowAllStats] = useState(false);
 
   const handleShare = (platform: string) => {
-    if (onShare) {
-      onShare(platform);
+    onShare?.(platform);
+    // Track share event
+    try {
+      if (typeof window !== 'undefined' && 'gtag' in window) {
+        (window as any).gtag('event', 'share', {
+          method: platform,
+          content_type: 'blog_post',
+          item_id: url,
+        });
+      }
+    } catch (error) {
+      console.error('Error tracking share event:', error);
     }
   };
 
-  const copyToClipboard = async () => {
+  const handleCopy = async () => {
     try {
       await navigator.clipboard.writeText(url);
       setCopied(true);
+      handleShare('copy');
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
-      console.error('Failed to copy:', err);
+      console.error('Failed to copy URL:', err);
     }
   };
 
-  const buttons = [
+  const shareButtons = [
     {
-      Component: FacebookShareButton,
+      Button: FacebookShareButton,
       Icon: FacebookIcon,
-      platform: 'facebook',
-      label: 'Share on Facebook',
-      color: '#1877f2'
+      name: 'Facebook',
+      ariaLabel: 'Share on Facebook',
     },
     {
-      Component: TwitterShareButton,
+      Button: TwitterShareButton,
       Icon: TwitterIcon,
-      platform: 'twitter',
-      label: 'Share on Twitter',
-      color: '#1da1f2'
+      name: 'Twitter',
+      ariaLabel: 'Share on Twitter',
     },
     {
-      Component: WhatsappShareButton,
+      Button: WhatsappShareButton,
       Icon: WhatsappIcon,
-      platform: 'whatsapp',
-      label: 'Share on WhatsApp',
-      color: '#25d366'
+      name: 'WhatsApp',
+      ariaLabel: 'Share on WhatsApp',
     },
     {
-      Component: LinkedinShareButton,
-      Icon: LinkedinIcon,
-      platform: 'linkedin',
-      label: 'Share on LinkedIn',
-      color: '#0a66c2'
-    },
-    {
-      Component: TelegramShareButton,
+      Button: TelegramShareButton,
       Icon: TelegramIcon,
-      platform: 'telegram',
-      label: 'Share on Telegram',
-      color: '#0088cc'
+      name: 'Telegram',
+      ariaLabel: 'Share on Telegram',
     },
     {
-      Component: PinterestShareButton,
+      Button: LinkedinShareButton,
+      Icon: LinkedinIcon,
+      name: 'LinkedIn',
+      ariaLabel: 'Share on LinkedIn',
+    },
+    {
+      Button: PinterestShareButton,
       Icon: PinterestIcon,
-      platform: 'pinterest',
-      label: 'Share on Pinterest',
-      color: '#e60023'
+      name: 'Pinterest',
+      ariaLabel: 'Share on Pinterest',
     },
     {
-      Component: RedditShareButton,
+      Button: RedditShareButton,
       Icon: RedditIcon,
-      platform: 'reddit',
-      label: 'Share on Reddit',
-      color: '#ff4500'
+      name: 'Reddit',
+      ariaLabel: 'Share on Reddit',
     },
-    {
-      Component: EmailShareButton,
-      Icon: EmailIcon,
-      platform: 'email',
-      label: 'Share via Email',
-      color: '#737373'
-    }
   ];
 
-  const totalShares = Object.values(stats).reduce((a, b) => a + b, 0);
-
   return (
-    <div className="space-y-4">
-      <motion.div
-        variants={containerVariants}
-        initial="initial"
-        animate="animate"
-        className={`flex flex-wrap gap-2 ${className}`}
-      >
-        {buttons.map(({ Component, Icon, platform, label, color }) => (
-          <motion.div
-            key={platform}
-            variants={buttonVariants}
-            whileHover="hover"
-            whileTap="tap"
-            className="relative group"
-            onMouseEnter={() => setShowTooltip(platform)}
+    <div className="space-y-4" role="group" aria-label="Share buttons">
+      <div className="flex flex-wrap gap-2">
+        {shareButtons.map(({ Button, Icon, name, ariaLabel }) => (
+          <div
+            key={name}
+            className="relative"
+            onMouseEnter={() => setShowTooltip(name)}
             onMouseLeave={() => setShowTooltip(null)}
           >
-            <Component
+            <Button
               url={url}
               title={title}
               description={description}
               media={image}
-              onClick={() => handleShare(platform)}
-              className="focus:outline-none"
+              onClick={() => handleShare(name.toLowerCase())}
+              className="focus:outline-none focus:ring-2 focus:ring-primary-500 rounded-full"
+              aria-label={ariaLabel}
             >
-              <Icon size={size} round={round} />
-              {showCount && stats[platform] > 0 && (
-                <span className="absolute -top-2 -right-2 bg-white rounded-full px-1 text-xs font-medium shadow-sm">
-                  {stats[platform]}
-                </span>
-              )}
-            </Component>
-
+              <Icon size={32} round className="hover:opacity-80 transition-opacity" />
+            </Button>
             <AnimatePresence>
-              {showTooltip === platform && (
+              {showTooltip === name && (
                 <motion.div
-                  variants={tooltipVariants}
-                  initial="hidden"
-                  animate="visible"
-                  exit="hidden"
-                  className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-white bg-gray-900 rounded whitespace-nowrap pointer-events-none"
+                  initial={{ opacity: 0, y: 5 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 5 }}
+                  className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-white bg-gray-800 rounded whitespace-nowrap z-10"
+                  role="tooltip"
                 >
-                  {label}
+                  {name}
                 </motion.div>
               )}
             </AnimatePresence>
-          </motion.div>
+          </div>
         ))}
 
-        {showCopyLink && (
-          <motion.button
-            variants={buttonVariants}
-            whileHover="hover"
-            whileTap="tap"
-            onClick={copyToClipboard}
-            className="p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors"
-          >
-            {copied ? (
-              <CheckIcon className="w-5 h-5 text-green-500" />
-            ) : (
-              <ClipboardIcon className="w-5 h-5 text-gray-600" />
-            )}
-          </motion.button>
-        )}
-      </motion.div>
-
-      {showStats && (
-        <motion.div
-          variants={statsVariants}
-          initial="initial"
-          animate="animate"
-          className="bg-gray-50 rounded-lg p-4"
+        <button
+          onClick={handleCopy}
+          className="p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 relative"
+          onMouseEnter={() => setShowTooltip('Copy')}
+          onMouseLeave={() => setShowTooltip(null)}
+          aria-label="Copy link to clipboard"
         >
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium text-gray-700">
-              Total Shares: {totalShares}
-            </span>
-            <button
-              onClick={() => setShowAllStats(!showAllStats)}
-              className="text-sm text-primary-600 hover:text-primary-700"
-            >
-              {showAllStats ? 'Show Less' : 'Show More'}
-            </button>
-          </div>
-
+          {copied ? (
+            <CheckIcon className="w-5 h-5 text-green-600" aria-hidden="true" />
+          ) : (
+            <ClipboardIcon className="w-5 h-5 text-gray-600" aria-hidden="true" />
+          )}
           <AnimatePresence>
-            {showAllStats && (
+            {showTooltip === 'Copy' && (
               <motion.div
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: 'auto', opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
-                className="space-y-2 overflow-hidden"
+                initial={{ opacity: 0, y: 5 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 5 }}
+                className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-white bg-gray-800 rounded whitespace-nowrap z-10"
+                role="tooltip"
               >
-                {buttons.map(({ platform, label, color }) => (
-                  stats[platform] > 0 && (
-                    <div key={platform} className="flex items-center justify-between">
-                      <span className="text-sm text-gray-600">{label}</span>
-                      <span className="text-sm font-medium" style={{ color }}>
-                        {stats[platform]}
-                      </span>
-                    </div>
-                  )
-                ))}
+                {copied ? 'Copied!' : 'Copy Link'}
               </motion.div>
             )}
           </AnimatePresence>
-        </motion.div>
-      )}
+        </button>
+      </div>
+      <div aria-live="polite" className="sr-only">
+        {copied && 'Link copied to clipboard'}
+      </div>
     </div>
   );
 } 
