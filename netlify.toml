@@ -1,0 +1,63 @@
+[build]
+  command = "npm run build"
+  publish = ".next"
+  base = "/"
+  functions = "netlify/functions"
+
+[build.environment]
+  NEXT_USE_NETLIFY_EDGE = "true"
+  NODE_VERSION = "18"
+
+[build.processing]
+  skip_processing = false
+
+[build.processing.css]
+  bundle = true
+  minify = true
+
+[build.processing.js]
+  bundle = true
+  minify = true
+
+[build.processing.html]
+  pretty_urls = true
+
+[build.processing.images]
+  compress = true
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
+
+[dev]
+  command = "npm run dev"
+  port = 8888
+  targetPort = 3000
+  framework = "#custom"
+  publish = ".next"
+
+[functions]
+  directory = "netlify/functions"
+  node_bundler = "esbuild"
+
+[[redirects]]
+  from = "/*"
+  to = "/_next/static/:splat"
+  status = 200
+  force = true
+  conditions = {Path = "/_next/static/**"}
+
+[[redirects]]
+  from = "/*"
+  to = "/404"
+  status = 404
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-XSS-Protection = "1; mode=block"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Content-Security-Policy = "default-src 'self' 'unsafe-inline' 'unsafe-eval' *.netlify.app; img-src 'self' data: blob: *.netlify.app; media-src 'self' data: blob: *.netlify.app;"
+    Strict-Transport-Security = "max-age=31536000; includeSubDomains"
+    Cache-Control = "public, max-age=31536000"
